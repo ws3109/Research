@@ -1,10 +1,8 @@
 import random
 from Geometry import *
-from plotFunctions import *
-import matplotlib.pyplot as plt
 
 class MatchingOnLattice:
-    def __init__(self, row, column, horizontal = True):
+    def __init__(self, row, column, horizontal = True, lambd = 1):
         self.row, self.column = row, column
         us, vs = zip(*[((x, y), (x + horizontal, y + (1 - horizontal))) for x in range(0, column, 1 + horizontal) for y in range(0, row, 2 - horizontal)])
         self.ptop = dict(zip(us + vs, vs + us))
@@ -12,6 +10,7 @@ class MatchingOnLattice:
         self.moves = [(i, j) for i in range(-1, 2) for j in range(-1, 2) if not (i == 0 and j == 0)]
         self.move_to_neighbor = lambda p: [(p[0] + m[0], p[1] + m[1]) for m in self.moves]
         self.rightOder = lambda p, q: (p, q) if p < q else (q, p)
+        self.lambd = lambd
 
     def neighbors(self, p):
         return [q for q in self.move_to_neighbor(p) if q[0] in range(0, self.column) and q[1] in range(0, self.row)]
@@ -30,6 +29,11 @@ class MatchingOnLattice:
         self.edges[self.rightOder(v1, v2)] = True
         self.ptop[u1], self.ptop[u2], self.ptop[v1], self.ptop[v2] = u2, u1, v2, v1
 
+    def shouldSwap(self, u1, v1, u2, v2):
+        old_len = l1_dist(u1, v1) + l1_dist(u2, v2)
+        new_len = l1_dist(u1, u2) + l1_dist(v1, v2)
+        return random.uniform(0, 1) < min(1, self.lambd ** (new_len - old_len))
+
     def randomWalk(self):
         u1 = (random.randint(0, self.column - 1), random.randint(0, self.row - 1))
         v1 = self.ptop[u1]
@@ -37,7 +41,7 @@ class MatchingOnLattice:
         if u2 != v1:
             v2 = self.ptop[u2]
             self.swap(u1, v1, u2, v2)
-            if not self.valid(u1, u2) or not self.valid(v1, v2):
+            if not self.valid(u1, u2) or not self.valid(v1, v2) or not self.shouldSwap(u1, v1, u2, v2):
                 self.swap(u1, u2, v1, v2)
 
     def getSamples(self, mixingTime = 10000, numSamples = 100):

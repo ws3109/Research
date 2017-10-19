@@ -21,9 +21,9 @@ def findCrossings(init_edges_list, final_edges_dict):
                 crossings.append(line_intersection((p1, q1), (p2, q2)))
     return set(crossings)
 
-def generateMatchings(size, mixingTime, numSamples, horizontal = True):
+def generateMatchings(size, mixingTime, numSamples, horizontal = True, lambd = 1):
     print('Generating matchings on lattice of size %d start from %s matching' % (size, 'horizontal' if horizontal else 'vertical'))
-    return MatchingOnLattice(size, size, horizontal).getSamples(mixingTime = mixingTime, numSamples = numSamples)
+    return MatchingOnLattice(size, size, horizontal, lambd).getSamples(mixingTime = mixingTime, numSamples = numSamples)
 
 def combineInitAndFinal(size, init_samples, final_samples, init_final_path_and_file):
     print('Generating pairs of initial and final matching on lattice of size %d.' % (size))
@@ -74,28 +74,22 @@ def create_folder(folder):
         os.makedirs(folder)
 
 def main():
-    mixingTime = [i for i in range(1000, 1001, 1000)]
-    numSamples = [i for i in range(100, 101, 100)]
-    sub_path = 'mixingTime-%d-numOfSamples-%d/'
-    for t, num in itertools.product(mixingTime, numSamples):
-        pair_folder = 'pairs/' + sub_path % (t, num)
-        create_folder(pair_folder)
-        image_folder = 'images/' + sub_path % (t, num)
-        create_folder(image_folder)
-        stat_folder = 'stat/' + sub_path % (t, num)
-        create_folder(stat_folder)
-        for size in range(4, 7, 2):
-            # generate pairs
-            samples_horizontal = generateMatchings(size, t, num, horizontal=True)
-            samples_vertical = generateMatchings(size, t, num, horizontal=False)
-            # # put them together
-            pair_file = '%d.pickle' % (size)
-            combineInitAndFinal(size, samples_horizontal, samples_vertical, pair_folder + pair_file)
-            # generate images
-            image_subfoler = image_folder + str(size) + '/'
-            create_folder(image_subfoler)
-            plotPairs(pair_folder + pair_file, image_subfoler, save_image = True)
-            # analyze the result
-            analyze(pair_folder, stat_folder)
+    lambd, mixing_time, num_of_samples, size_range = 1.2, 1000, 100, range(4, 6, 2)
+    pair_folder, image_folder, stat_folder = 'pairs/', 'images/', 'stat/'
+    for folder in [pair_folder, image_folder, stat_folder]:
+        create_folder(folder)
+    for size in size_range:
+        # generate pairs
+        samples_horizontal = generateMatchings(size, mixing_time, num_of_samples, horizontal=True, lambd = lambd)
+        samples_vertical = generateMatchings(size, mixing_time, num_of_samples, horizontal=False, lambd = lambd)
+        # # put them together
+        pair_file = '%d.pickle' % (size)
+        combineInitAndFinal(size, samples_horizontal, samples_vertical, pair_folder + pair_file)
+        # generate images
+        image_subfoler = image_folder + str(size) + '/'
+        create_folder(image_subfoler)
+        plotPairs(pair_folder + pair_file, image_subfoler, save_image = True)
+        # analyze the result
+        analyze(pair_folder, stat_folder)
 
 main()
